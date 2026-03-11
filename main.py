@@ -1,20 +1,58 @@
-from flask import Flask
+from flask import Flask, jsonify, render_template_string
 import mysql.connector
-import os
 
 app = Flask(__name__)
 
-# Cloud SQL connection info
 DB_USER = "root"
-DB_PASSWORD = "e2e123!"
+DB_PASSWORD = "e2e123!"  # Cloud SQL passwor
 DB_NAME = "test_db"
 DB_HOST = "34.140.101.84"  # Cloud SQL public IP
 DB_PORT = 3306
 
+# Home page
 @app.route("/")
 def home():
+    # Inline HTML with button & JS
+    html_content = """
+    <html>
+        <head>
+            <title>Cloud SQL Test</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+                button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+                #status { margin-top: 20px; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <h1>Cloud SQL Connection Test</h1>
+            <button onclick="checkDB()">Check Database Connection</button>
+            <div id="status"></div>
+
+            <script>
+                function checkDB() {
+                    fetch('/check-db')
+                        .then(response => response.json())
+                        .then(data => {
+                            if(data.status === 'connected') {
+                                document.getElementById('status').innerText = "✅ Cloud SQL is connected!";
+                            } else {
+                                document.getElementById('status').innerText = "❌ Connection failed: " + data.error;
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('status').innerText = "❌ Error: " + err;
+                        });
+                }
+            </script>
+        </body>
+    </html>
+    """
+    return render_template_string(html_content)
+
+# Endpoint to check DB connection
+@app.route("/check-db")
+def check_db():
     try:
-        # Connect to Cloud SQL
         conn = mysql.connector.connect(
             user=DB_USER,
             password=DB_PASSWORD,
@@ -23,33 +61,14 @@ def home():
             database=DB_NAME
         )
         cursor = conn.cursor()
-        # Create table if not exists
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS visits (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                msg VARCHAR(255)
-            )
-        """)
-        # Insert a new visit message
-        cursor.execute("INSERT INTO visits (msg) VALUES ('Hello from Cloud SQL!')")
-        conn.commit()
-        # Get last message
-        cursor.execute("SELECT msg FROM visits ORDER BY id DESC LIMIT 1")
-        message = cursor.fetchone()[0]
-
+        cursor.execute("SELECT 1")  # simple query to test connection
         cursor.close()
         conn.close()
-        return f"""
-        <html>
-            <body>
-                <h1>Database says:</h1>
-                <p>{message}</p>
-            </body>
-        </html>
-        """
+        return jsonify({"status": "connected"})
     except Exception as e:
-        return f"<h1>Error connecting to database:</h1><p>{e}</p>"
+        return jsonify({"status": "error", "error": str(e)})
 
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
