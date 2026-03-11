@@ -1,71 +1,31 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask
 import mysql.connector
 import os
 
 app = Flask(__name__)
 
-# --- Cloud SQL connection info ---
+# Cloud SQL instance connection name
+INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
+
+# Database credentials
 DB_USER = "root"
-DB_PASSWORD = "e2e123!"  # Cloud SQL root password
+DB_PASSWORD = "e2e123!"
 DB_NAME = "test_db"
-# Unix socket path for Cloud SQL connection
-DB_SOCKET = "/cloudsql/e2e-test-project-489914:europe-west1:e2e-test-sql"
 
-# --- Home page ---
-@app.route("/")
-def home():
-    html_content = """
-    <html>
-        <head>
-            <title>Cloud SQL SPA Test</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-                button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-                #status { margin-top: 20px; font-weight: bold; }
-                #last-msg { margin-top: 20px; font-style: italic; }
-            </style>
-        </head>
-        <body>
-            <h1>Cloud SQL SPA Test</h1>
-            <button onclick="checkDB()">Check Database Connection</button>
-            <div id="status"></div>
-            <div id="last-msg"></div>
 
-            <script>
-                function checkDB() {
-                    fetch('/check-db')
-                        .then(response => response.json())
-                        .then(data => {
-                            if(data.status === 'connected') {
-                                document.getElementById('status').innerText = "✅ Cloud SQL is connected!";
-                                document.getElementById('last-msg').innerText = "Last message: " + data.last_msg;
-                            } else {
-                                document.getElementById('status').innerText = "❌ Connection failed: " + data.error;
-                                document.getElementById('last-msg').innerText = "";
-                            }
-                        })
-                        .catch(err => {
-                            document.getElementById('status').innerText = "❌ Error: " + err;
-                            document.getElementById('last-msg').innerText = "";
-                        });
-                }
-            </script>
-        </body>
-    </html>
-    """
-    return render_template_string(html_content)
-
-# --- Endpoint to check DB ---
 @app.route("/check-db")
 def check_db():
     try:
+        # Connect using Unix socket
         conn = mysql.connector.connect(
             user=DB_USER,
             password=DB_PASSWORD,
-            unix_socket=DB_SOCKET,
+            unix_socket=f"/cloudsql/{INSTANCE_CONNECTION_NAME}",
             database=DB_NAME
         )
+
         cursor = conn.cursor()
+
         # Create table if it doesn't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS visits (
@@ -73,19 +33,87 @@ def check_db():
                 msg VARCHAR(255)
             )
         """)
-        # Insert a new visit message
+
+        # Insert a test message
         cursor.execute("INSERT INTO visits (msg) VALUES ('Hello from Cloud SQL!')")
         conn.commit()
-        # Get the last inserted message
+
+        # Read latest message
         cursor.execute("SELECT msg FROM visits ORDER BY id DESC LIMIT 1")
-        last_msg = cursor.fetchone()[0]
+        message = cursor.fetchone()[0]
+
         cursor.close()
         conn.close()
-        return jsonify({"status": "connected", "last_msg": last_msg})
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e), "last_msg": ""})
 
-# --- Run locally (optional) ---
+        return f"✅ Cloud SQL is connected!<br>Latest message: {message}"
+
+    except Exception as e:
+        return f"❌ Connection failed: {str(e)}"
+
+
+@app.route("/")
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cloud SQL SPA Test</title>
+        <style>
+            body {
+                font-family: Arial;
+                text-align: center;
+                margin-top: 80px;
+                background: #f5f5f5;
+            }
+
+            h1 {
+                color: #333;
+            }
+
+            button {
+                padding: 14px 25px;
+                font-size: 16px;
+                border: none;
+                background: #4285F4;
+                color: white;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+            button:hover {
+                background: #2f6fe0;
+            }
+
+            #result {
+                margin-top: 30px;
+                font-size: 18px;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>Cloud SQL SPA Test</h1>
+
+        <button onclick="checkDB()">
+            Check Database Connection
+        </button>
+
+        <p id="result"></p>
+
+        <script>
+            async function checkDB() {
+                const response = await fetch('/check-db');
+                const text = await response.text();
+                document.getElementById("result").innerHTML = text;
+            }
+        </script>
+
+    </body>
+    </html>
+    """
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
