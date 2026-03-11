@@ -9,8 +9,8 @@ def home():
     # Connect to Cloud SQL
     conn = mysql.connector.connect(
         user='root',
-        password='E2E123!',  # the root password set
-        host='/cloudsql/e2e-test-project-489914:europe-west1:e2e-test-sql'
+        password='E2E123!',
+        host='/cloudsql/e2e-test-project-489914:europe-west1:e2e-test-sql',
         database='test_db'  # create this database next
     )
     cursor = conn.cursor()
