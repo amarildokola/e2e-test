@@ -1,36 +1,35 @@
 from flask import Flask
+import mysql.connector
+import os
+
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>Simple SPA Test</title>
-      <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
-        header { background: #4a90e2; color: white; padding: 20px; }
-        section { margin: 40px auto; max-width: 600px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        p { font-size: 18px; }
-      </style>
-    </head>
-    <body>
-      <header>
-        <h1>Simple SPA Test</h1>
-      </header>
-      <section>
-        <p id="message">Hello World from E2E test!</p>
-        <button onclick="changeMessage()">Click me!</button>
-      </section>
-      <script>
-        function changeMessage() {
-          document.getElementById("message").textContent = "You clicked the button! 🎉";
-        }
-      </script>
-    </body>
+    # Connect to Cloud SQL
+    conn = mysql.connector.connect(
+        user='root',
+        password='E2E123!',  # the root password set
+        host='/cloudsql/e2e-test-project-489914:europe-west1:e2e-test-sql',
+        database='test_db'  # create this database next
+    )
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS visits (id INT AUTO_INCREMENT PRIMARY KEY, msg VARCHAR(255))")
+    cursor.execute("INSERT INTO visits (msg) VALUES ('Hello from Cloud SQL!')")
+    conn.commit()
+
+    cursor.execute("SELECT msg FROM visits ORDER BY id DESC LIMIT 1")
+    message = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return f"""
+    <html>
+      <body>
+        <h1>Database says:</h1>
+        <p>{message}</p>
+      </body>
     </html>
     """
 
