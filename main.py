@@ -53,6 +53,7 @@ def home():
 @app.route("/check-db")
 def check_db():
     try:
+        # Open a fresh connection
         conn = mysql.connector.connect(
             user=DB_USER,
             password=DB_PASSWORD,
@@ -61,7 +62,8 @@ def check_db():
             database=DB_NAME
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT 1")  # simple query to test connection
+        cursor.execute("SELECT 1")  # simple test query
+        cursor.fetchall()           # make sure to read all results
         cursor.close()
         conn.close()
         return jsonify({"status": "connected"})
