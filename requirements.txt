@@ -1,3 +1,2 @@
 Flask
-cloud-sql-python-connector[mysql]
-pymysql
+mysql-connector-python
