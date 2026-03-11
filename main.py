@@ -1,5 +1,4 @@
 from flask import Flask
-import os
 from google.cloud.sql.connector import Connector
 import pymysql
 
@@ -9,14 +8,13 @@ connector = Connector()
 INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
 
 def getconn():
-    conn = connector.connect(
+    return connector.connect(
         INSTANCE_CONNECTION_NAME,
         "pymysql",
         user="root",
         password="E2E123!",
         db="test_db"
     )
-    return conn
 
 @app.route('/')
 def home():
@@ -34,5 +32,6 @@ def home():
     return f"<h1>Database says:</h1><p>{message}</p>"
 
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)
