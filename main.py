@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # Cloud SQL connection info
 DB_USER = "root"
-DB_PASSWORD = "E2E123!"
+DB_PASSWORD = "e2e123!"
 DB_NAME = "test_db"
 DB_HOST = "34.140.101.84"  # Cloud SQL public IP
 DB_PORT = 3306
