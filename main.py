@@ -1,18 +1,26 @@
 from flask import Flask
-import mysql.connector
 import os
+from google.cloud.sql.connector import Connector
+import pymysql
 
 app = Flask(__name__)
+connector = Connector()
+
+INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
+
+def getconn():
+    conn = connector.connect(
+        INSTANCE_CONNECTION_NAME,
+        "pymysql",
+        user="root",
+        password="E2E123!",
+        db="test_db"
+    )
+    return conn
 
 @app.route('/')
 def home():
-    # Connect to Cloud SQL
-    conn = mysql.connector.connect(
-        user='root',
-        password='E2E123!',
-        host='/cloudsql/e2e-test-project-489914:europe-west1:e2e-test-sql',
-        database='test_db'  # create this database next
-    )
+    conn = getconn()
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS visits (id INT AUTO_INCREMENT PRIMARY KEY, msg VARCHAR(255))")
     cursor.execute("INSERT INTO visits (msg) VALUES ('Hello from Cloud SQL!')")
@@ -23,17 +31,8 @@ def home():
 
     cursor.close()
     conn.close()
-
-    return f"""
-    <html>
-      <body>
-        <h1>Database says:</h1>
-        <p>{message}</p>
-      </body>
-    </html>
-    """
+    return f"<h1>Database says:</h1><p>{message}</p>"
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
