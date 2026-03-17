@@ -5,17 +5,17 @@ import os
 app = Flask(__name__)
 
 # Cloud SQL instance connection name
-INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
+# INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
 
 # Database credentials
-DB_USER = "testuser"
-DB_PASSWORD = "test123"
-DB_NAME = "test_db"
+# DB_USER = "testuser"
+# DB_PASSWORD = "test123"
+# DB_NAME = "test_db"
 
 
 # ✅ NEW ROUTE — GET USERS
 @app.route("/users")
-def get_users():
+# def get_users():
     try:
         conn = mysql.connector.connect(
             user=DB_USER,
