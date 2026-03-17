@@ -13,10 +13,10 @@ DB_PASSWORD = "e2e123!"
 DB_NAME = "test_db"
 
 
-@app.route("/check-db")
-def check_db():
+# ✅ NEW ROUTE — GET USERS
+@app.route("/users")
+def get_users():
     try:
-        # Connect using Unix socket
         conn = mysql.connector.connect(
             user=DB_USER,
             password=DB_PASSWORD,
@@ -25,30 +25,20 @@ def check_db():
         )
 
         cursor = conn.cursor()
-
-        # Create table if it doesn't exist
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS visits (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                msg VARCHAR(255)
-            )
-        """)
-
-        # Insert a test message
-        cursor.execute("INSERT INTO visits (msg) VALUES ('Hello from Cloud SQL!')")
-        conn.commit()
-
-        # Read latest message
-        cursor.execute("SELECT msg FROM visits ORDER BY id DESC LIMIT 1")
-        message = cursor.fetchone()[0]
+        cursor.execute("SELECT name, email FROM users")
+        users = cursor.fetchall()
 
         cursor.close()
         conn.close()
 
-        return f"✅ Cloud SQL is connected!<br>Latest message: {message}"
+        result = ""
+        for user in users:
+            result += f"<p><b>{user[0]}</b> - {user[1]}</p>"
+
+        return result
 
     except Exception as e:
-        return f"❌ Connection failed: {str(e)}"
+        return f"❌ Error: {str(e)}"
 
 
 @app.route("/")
@@ -95,15 +85,15 @@ def home():
 
         <h1>Cloud SQL SPA Test</h1>
 
-        <button onclick="checkDB()">
-            Check Database Connection
+        <button onclick="loadUsers()">
+            Load Users
         </button>
 
-        <p id="result"></p>
+        <div id="result"></div>
 
         <script>
-            async function checkDB() {
-                const response = await fetch('/check-db');
+            async function loadUsers() {
+                const response = await fetch('/users');
                 const text = await response.text();
                 document.getElementById("result").innerHTML = text;
             }
