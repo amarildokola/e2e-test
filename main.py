@@ -8,8 +8,8 @@ app = Flask(__name__)
 INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
 
 # Database credentials
-DB_USER = "root"
-DB_PASSWORD = "e2e123!"
+DB_USER = "testuser"
+DB_PASSWORD = "test123"
 DB_NAME = "test_db"
 
 
