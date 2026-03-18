@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 
 # Cloud SQL instance connection name
-INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
+# INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
 
 # Database credentials
 DB_USER = "testuser"
