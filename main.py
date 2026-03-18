@@ -12,8 +12,10 @@ DB_USER = "testuser"
 DB_PASSWORD = "test123"
 DB_NAME = "test_db"
 
+# Bucket name
+BUCKET_NAME = "e2e-test-bucket-amarildo"
 
-# ✅ NEW ROUTE — GET USERS
+
 @app.route("/users")
 def get_users():
     try:
@@ -25,15 +27,28 @@ def get_users():
         )
 
         cursor = conn.cursor()
-        cursor.execute("SELECT name, email FROM users")
+        cursor.execute("SELECT name, email, image FROM users")
         users = cursor.fetchall()
 
         cursor.close()
         conn.close()
 
         result = ""
+
         for user in users:
-            result += f"<p><b>{user[0]}</b> - {user[1]}</p>"
+            name = user[0]
+            email = user[1]
+            image = user[2]
+
+            image_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{image}"
+
+            result += f"""
+            <div style="margin:20px;">
+                <img src="{image_url}" width="120" style="border-radius:10px;"><br>
+                <b>{name}</b><br>
+                {email}
+            </div>
+            """
 
         return result
 
@@ -47,7 +62,7 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Cloud SQL SPA Test</title>
+        <title>Cloud SQL + Bucket Test</title>
         <style>
             body {
                 font-family: Arial;
@@ -78,12 +93,16 @@ def home():
                 margin-top: 30px;
                 font-size: 18px;
             }
+
+            img {
+                margin-top: 10px;
+            }
         </style>
     </head>
 
     <body>
 
-        <h1>Cloud SQL SPA Test</h1>
+        <h1>Users with Images</h1>
 
         <button onclick="loadUsers()">
             Load Users
