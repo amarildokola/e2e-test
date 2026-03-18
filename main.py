@@ -66,12 +66,12 @@ def get_users():
             image_url = f"/image/{image}"
 
             result += f"""
-            <div style="margin:20px;">
-                <img src="{image_url}" width="120" style="border-radius:10px;"><br>
-                <b>{name}</b><br>
-                {email}
+            <div class="card">
+                <img src="{image_url}">
+                <div class="name">{name}</div>
+                <div class="email">{email}</div>
             </div>
-            """
+            """ 
 
         return result
 
@@ -86,21 +86,24 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Cloud SQL + Bucket Test</title>
+        <title>Users with Images</title>
         <style>
             body {
                 font-family: Arial;
-                text-align: center;
-                margin-top: 80px;
                 background: #f5f5f5;
+                text-align: center;
+                margin: 0;
+                padding: 0;
             }
 
             h1 {
+                margin-top: 40px;
                 color: #333;
             }
 
             button {
-                padding: 14px 25px;
+                margin-top: 20px;
+                padding: 12px 25px;
                 font-size: 16px;
                 border: none;
                 background: #4285F4;
@@ -114,19 +117,45 @@ def home():
             }
 
             #result {
-                margin-top: 30px;
-                font-size: 18px;
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                margin-top: 40px;
+                flex-wrap: wrap;
             }
 
-            img {
-                margin-top: 10px;
+            .card {
+                background: white;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                width: 180px;
+            }
+
+            .card img {
+                width: 120px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 50%;
+                margin-bottom: 10px;
+            }
+
+            .name {
+                font-weight: bold;
+                font-size: 18px;
+                margin-bottom: 5px;
+            }
+
+            .email {
+                font-size: 14px;
+                color: #666;
             }
         </style>
     </head>
 
     <body>
 
-        <h1>Users with Images</h1>
+        <h1>Users</h1>
 
         <button onclick="loadUsers()">
             Load Users
