@@ -1,5 +1,7 @@
-from flask import Flask
+from flask import Flask, Response
 import mysql.connector
+from google.cloud import storage
+import mimetypes
 import os
 
 app = Flask(__name__)
@@ -16,6 +18,26 @@ DB_NAME = "test_db"
 BUCKET_NAME = "e2e-test-bucket-amarildo"
 
 
+# ✅ NEW ROUTE — SERVE IMAGES FROM BUCKET
+@app.route("/image/<filename>")
+def get_image(filename):
+    try:
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(filename)
+
+        image_bytes = blob.download_as_bytes()
+
+        # detect correct file type
+        mime_type, _ = mimetypes.guess_type(filename)
+
+        return Response(image_bytes, mimetype=mime_type or 'application/octet-stream')
+
+    except Exception as e:
+        return f"Error loading image: {str(e)}"
+
+
+# ✅ UPDATED ROUTE — GET USERS WITH IMAGES
 @app.route("/users")
 def get_users():
     try:
@@ -40,7 +62,8 @@ def get_users():
             email = user[1]
             image = user[2]
 
-            image_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{image}"
+            # IMPORTANT: now using backend route, not public URL
+            image_url = f"/image/{image}"
 
             result += f"""
             <div style="margin:20px;">
@@ -56,6 +79,7 @@ def get_users():
         return f"❌ Error: {str(e)}"
 
 
+# ✅ FRONTEND
 @app.route("/")
 def home():
     return """
