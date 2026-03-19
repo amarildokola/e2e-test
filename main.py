@@ -3,6 +3,7 @@ import mysql.connector
 from google.cloud import storage
 import mimetypes
 import os
+import requests
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ DB_NAME = "test_db"
 BUCKET_NAME = "e2e-test-bucket-amarildo"
 
 
-# ✅ NEW ROUTE — SERVE IMAGES FROM BUCKET
+# NEW ROUTE — SERVE IMAGES FROM BUCKET
 @app.route("/image/<filename>")
 def get_image(filename):
     try:
@@ -37,7 +38,7 @@ def get_image(filename):
         return f"Error loading image: {str(e)}"
 
 
-# ✅ UPDATED ROUTE — GET USERS WITH IMAGES
+# UPDATED ROUTE — GET USERS WITH IMAGES
 @app.route("/users")
 def get_users():
     try:
@@ -79,7 +80,16 @@ def get_users():
         return f"❌ Error: {str(e)}"
 
 
-# ✅ FRONTEND
+@app.route("/analyze-vm")
+def analyze_vm():
+    try:
+        response = requests.get("http://34.14.85.38:5000/analyze")
+        return response.text
+    except Exception as e:
+        return f"❌ VM Error: {str(e)}"
+
+
+# FRONTEND
 @app.route("/")
 def home():
     return """
@@ -161,11 +171,23 @@ def home():
             Load Users
         </button>
 
+        <button onclick="analyzeVM()">
+            Analyze Users (VM)
+        </button>               
+
         <div id="result"></div>
 
         <script>
             async function loadUsers() {
                 const response = await fetch('/users');
+                const text = await response.text();
+                document.getElementById("result").innerHTML = text;
+            }
+        </script>
+
+        <script>
+            async function analyzeVM() {
+                const response = await fetch('/analyze-vm');
                 const text = await response.text();
                 document.getElementById("result").innerHTML = text;
             }
