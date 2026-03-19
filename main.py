@@ -5,9 +5,10 @@ import mimetypes
 import os
 import requests
 
+# Create Flask app
 app = Flask(__name__)
 
-# Cloud SQL instance connection name
+# Cloud SQL connection (used via Unix socket in Cloud Run)
 INSTANCE_CONNECTION_NAME = "e2e-test-project-489914:europe-west1:e2e-test-sql"
 
 # Database credentials
@@ -15,33 +16,37 @@ DB_USER = "testuser"
 DB_PASSWORD = "test123"
 DB_NAME = "test_db"
 
-# Bucket name
+# Cloud Storage bucket name (stores images)
 BUCKET_NAME = "e2e-test-bucket-amarildo"
 
 
-# NEW ROUTE — SERVE IMAGES FROM BUCKET
+# ROUTE: Serve images from Cloud Storage (via backend)
 @app.route("/image/<filename>")
 def get_image(filename):
     try:
+        # Connect to Cloud Storage
         client = storage.Client()
         bucket = client.bucket(BUCKET_NAME)
         blob = bucket.blob(filename)
 
+        # Download image as bytes
         image_bytes = blob.download_as_bytes()
 
-        # detect correct file type
+        # Detect correct MIME type (jpg, png, etc.)
         mime_type, _ = mimetypes.guess_type(filename)
 
+        # Return image to browser
         return Response(image_bytes, mimetype=mime_type or 'application/octet-stream')
 
     except Exception as e:
         return f"Error loading image: {str(e)}"
 
 
-# UPDATED ROUTE — GET USERS WITH IMAGES
+# ROUTE: Get users from Cloud SQL and display them
 @app.route("/users")
 def get_users():
     try:
+        # Connect to Cloud SQL using Unix socket
         conn = mysql.connector.connect(
             user=DB_USER,
             password=DB_PASSWORD,
@@ -50,6 +55,8 @@ def get_users():
         )
 
         cursor = conn.cursor()
+
+        # Fetch users from database
         cursor.execute("SELECT name, email, image FROM users")
         users = cursor.fetchall()
 
@@ -58,12 +65,13 @@ def get_users():
 
         result = ""
 
+        # Loop through users and build HTML cards
         for user in users:
             name = user[0]
             email = user[1]
             image = user[2]
 
-            # IMPORTANT: now using backend route, not public URL
+            # Use backend route to serve image (not public URL)
             image_url = f"/image/{image}"
 
             result += f"""
@@ -80,16 +88,21 @@ def get_users():
         return f"❌ Error: {str(e)}"
 
 
+# ROUTE: Call VM to analyze users (Cloud Run → VM)
 @app.route("/analyze-vm")
 def analyze_vm():
     try:
+        # Send request to VM external IP
         response = requests.get("http://34.14.85.38:5000/analyze")
+
+        # Return VM response to frontend
         return response.text
+
     except Exception as e:
         return f"❌ VM Error: {str(e)}"
 
 
-# FRONTEND
+# FRONTEND (Single Page App)
 @app.route("/")
 def home():
     return """
@@ -97,6 +110,7 @@ def home():
     <html>
     <head>
         <title>Users with Images</title>
+
         <style>
             body {
                 font-family: Arial;
@@ -126,6 +140,7 @@ def home():
                 background: #2f6fe0;
             }
 
+            /* Container for user cards */
             #result {
                 display: flex;
                 justify-content: center;
@@ -134,6 +149,7 @@ def home():
                 flex-wrap: wrap;
             }
 
+            /* User card styling */
             .card {
                 background: white;
                 padding: 20px;
@@ -167,17 +183,21 @@ def home():
 
         <h1>Users</h1>
 
+        <!-- Button to load users from DB -->
         <button onclick="loadUsers()">
             Load Users
         </button>
 
+        <!-- Button to trigger VM analysis -->
         <button onclick="analyzeVM()">
             Analyze Users (VM)
         </button>               
 
+        <!-- Where results are displayed -->
         <div id="result"></div>
 
         <script>
+            // Calls /users endpoint and displays result
             async function loadUsers() {
                 const response = await fetch('/users');
                 const text = await response.text();
@@ -186,6 +206,7 @@ def home():
         </script>
 
         <script>
+            // Calls VM through backend and displays result
             async function analyzeVM() {
                 const response = await fetch('/analyze-vm');
                 const text = await response.text();
@@ -198,6 +219,7 @@ def home():
     """
 
 
+# Run app (Cloud Run uses PORT env variable)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
